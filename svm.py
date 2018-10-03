@@ -8,7 +8,7 @@ import matplotlib.patches as mpatches
 def SVMClassifier(inputs, targets, C, N, PCM):
 
     def zerofun(alpha_,):
-        #alpha_t=np.transpose(alpha_)
+        alpha_t=np.transpose(alpha_)
         return np.dot(alpha_, targets)
 
     def objective(alpha_):
@@ -27,7 +27,8 @@ def SVMClassifier(inputs, targets, C, N, PCM):
     return alpha
 
 def generateData():
-    np.random.seed(100)
+    #np.random.seed(100)
+
     classA = np.concatenate((
     np.random.randn(10,2)*0.2+[1.5,0.5],
     np.random.randn(10,2)*0.2+[-1.5,0.5]))
@@ -35,8 +36,8 @@ def generateData():
     classB = np.random.randn(20,2)*0.5+[0.0,-0.5]
 
     #Plotting
-    #pA = plt.plot([p[0] for p in classA], [p[1] for p in classA],'bo')
-    #pB = plt.plot([p[0] for p in classB], [p[1] for p in classB],'ro')
+    pA = plt.plot([p[0] for p in classA], [p[1] for p in classA],'bo')
+    pB = plt.plot([p[0] for p in classB], [p[1] for p in classB],'ro')
 
     inputs = np.concatenate((classA,classB))
     targets = np.concatenate(
@@ -51,8 +52,9 @@ def generateData():
 
     return inputs, targets, N
 
-def kernel(x1,x2,type='lin'):
+def kernel(x1,x2,type='exp'):
     x1_t=np.transpose(x1)
+    x2_t=np.transpose(x2)
     if type == 'lin':
         return np.dot(x1_t,x2)
     elif type == 'pol2':
@@ -60,7 +62,7 @@ def kernel(x1,x2,type='lin'):
     elif type == 'pol3':
         return math.pow(np.dot(x1_t,x2)+1,3)
     elif type == 'exp':
-        return math.exp(-np.linalg.norm(x1-x2, 2)**2/(2.*2**2))
+        return math.exp(-np.linalg.norm(x1-x2, 2)**2/(2.*1.0**2))
 
 
 def preComputeMatrix(inputs, targets, N):
@@ -82,7 +84,7 @@ def extractZeroAlphas(data, inputs, targets, threshold):
     goodTargets = []
     goodAlpha = []
     for i in range(len(data)):
-        if data[i]<threshold:
+        if data[i] < threshold:
             zeroAlpha.append(data[i])
             zeroPoints.append(inputs[i])
             zeroTargets.append(targets[i])
@@ -127,31 +129,37 @@ if __name__ == "__main__":
     inputs, targets, N = generateData()
     preComputedMatrix = preComputeMatrix(inputs, targets, N)
     threshold = math.pow(10, -5)
-    C = 5
+    C = 10
 
     res = SVMClassifier(inputs, targets, C, N, preComputedMatrix)
     goodAlpha, goodPoints, goodTargets, zeroAlpha, zeroPoints, zeroTargets=\
     extractZeroAlphas(res, inputs, targets, threshold)
-    b = bCalculation(goodAlpha, goodPoints, goodTargets, C)
+    # b = bCalculation(goodAlpha, goodPoints, goodTargets, C)
+    b = bCalculation(zeroAlpha, zeroPoints, zeroTargets, C)
     #ind =  indicator(goodAlpha, goodPoints, goodTargets, b)
     print ("SMV with C={}, res={}".format(C, goodAlpha))
 
     goodClassA=[]
     goodClassB=[]
     for i in range(len(zeroTargets)):
-        if zeroTargets[i] == 1:
+        if zeroTargets[i] > 0:
             goodClassA.append(zeroPoints[i])
         else:
             goodClassB.append(zeroPoints[i])
-    pA = plt.plot([p[0] for p in goodClassA], [p[1] for p in goodClassA],'bo')
-    pB = plt.plot([p[0] for p in goodClassB], [p[1] for p in goodClassB],'ro')
+    # pA = plt.plot([p[0] for p in goodClassA], [p[1] for p in goodClassA],'bo')
+    # pB = plt.plot([p[0] for p in goodClassB], [p[1] for p in goodClassB],'ro')
 
 
 
     xgrid = np.linspace(-5,5)
     ygrid = np.linspace(-4,4)
+    # grid = np.array([[sIndicator(np.array([x,y]),
+    # zeroAlpha, zeroPoints, zeroTargets, b)
+    # for x in xgrid]
+    # for y in ygrid])
+
     grid = np.array([[sIndicator(np.array([x,y]),
-    goodAlpha, goodPoints, goodTargets, C)
+    res, inputs, targets, b)
     for x in xgrid]
     for y in ygrid])
 
